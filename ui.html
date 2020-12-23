@@ -1,0 +1,12 @@
+<h2>Typeface designer</h2>
+<button id="createSpacing">Create spacing strings</button>
+<script>
+
+document.getElementById('createSpacing').onclick = () => {
+  // const textbox = document.getElementById('count');
+  // const count = parseInt(textbox.value, 10);
+  parent.postMessage({ pluginMessage: { type: 'create-spacing', count } }, '*')
+}
+
+
+</script>
