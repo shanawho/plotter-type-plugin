@@ -1,11 +1,29 @@
-<h2>Typeface designer</h2>
+<button id="log">Log components</button>
+
 <button id="createSpacing">Create spacing strings</button>
+
+<input id="textbox" type="text" placeholder="Type something"></input>
+<button id="add-text">Add text</button>
+
 <script>
 
 document.getElementById('createSpacing').onclick = () => {
   // const textbox = document.getElementById('count');
   // const count = parseInt(textbox.value, 10);
-  parent.postMessage({ pluginMessage: { type: 'create-spacing', count } }, '*')
+  parent.postMessage({ pluginMessage: { type: 'create-spacing' } }, '*')
+}
+
+document.getElementById('log').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'log-components' } }, '*')
+}
+
+document.getElementById('add-text').onclick = () => {
+  const text = document.getElementById('textbox').value;
+  console.log(text);
+  if (text != "") {
+    console.log("post");
+    parent.postMessage({ pluginMessage: { type: 'add-text' , data: text} }, '*')
+  }
 }
 
 

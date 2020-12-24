@@ -1,4 +1,14 @@
-import _ from 'lodash';
+// import _ from 'lodash';
+
+let capitals = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+let lowercase = "abcdefghijklmnopqrstuvwxyz";
+let numbers = "0123456789";
+// let symbols = ".,;:'\"~&*!@#$"
+
+let glyphSets = [capitals, lowercase, numbers];
+
+var components = {};
+
 
 figma.showUI(__html__);
 
@@ -6,47 +16,98 @@ figma.showUI(__html__);
 // callback. The callback will be passed the "pluginMessage" property of the
 // posted message.
 figma.ui.onmessage = msg => {
-  // One way of distinguishing between different types of messages sent from
-  // your HTML page is to use an object with a "type" property like this.
-  if (msg.type === 'create-spacing') {
+  if (msg.type === 'log-components') {
+    logComponents();
+  } else if (msg.type === 'create-spacing') {
     createSpacingStrings();
 
+    // figma.closePlugin();
+  } else if (msg.type == 'add-text') {
+    renderText(msg.data)
   }
-  //   const nodes: SceneNode[] = [];
-  //   for (let i = 0; i < msg.count; i++) {
-  //     const rect = figma.createRectangle();
-  //     rect.x = i * 150;
-  //     rect.fills = [{type: 'SOLID', color: {r: 1, g: 0.5, b: 0}}];
-  //     figma.currentPage.appendChild(rect);
-  //     nodes.push(rect);
-  //   }
-  //   figma.currentPage.selection = nodes;
-  //   figma.viewport.scrollAndZoomIntoView(nodes);
-  // }
+}
 
-  // Make sure to close the plugin when you're done. Otherwise the plugin will
-  // keep running, which shows the cancel button at the bottom of the screen.
-  figma.closePlugin();
-};
 
-let capitals = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-let lowercase = "abcdefghijklmnopqrstuvwxyz"
-let numberss = "0123456789"
-let symbols = ".,;:'\"~&*!@#$"
+function logComponents() {
+  // all components must be glyphs in the short term
+  figma.root.children.map(page => {
+    page.findAll(n => n.type == 'COMPONENT').map(node => {
+      // map each node into a hash table with its name as it key for easy access
+      components[node.name] = <ComponentNode> node;
+    })
+  })
+  // components = Object.keys(components).sort().reduce( 
+  //   (obj, key) => ({ obj[key]: components[key] }), {}
+  // );
+}
+
+let createFrame = function(): FrameNode {
+  var frame = figma.createFrame();
+  
+  return frame;
+}
+
+let buildSpacingString = function(glyph: string): string {
+  var spacingString = "";
+  if (capitals.includes(glyph)) {
+    spacingString = "HHH" + glyph + "HHH" + glyph + "OOO" + glyph + "OOO";
+  } else if (lowercase.includes(glyph)) {
+    spacingString = "nnn" + glyph + "nnn" + glyph + "ooo" + glyph + "ooo";
+  } else if (numbers.includes(glyph)) {
+    spacingString = "111" + glyph + "111" + glyph + "000" + glyph + "000";
+  }
+  return spacingString;
+}
+
+function addGlyphsToFrame(string: string) {
+  let x = 0;
+  let y = 0;
+  if (figma.currentPage.children.length > 0) {
+    var lastNode: SceneNode = figma.currentPage.children[figma.currentPage.children.length-1];
+    y = lastNode.y + lastNode.height + 50;
+    x = lastNode.x;
+  }
+  let frame = createFrame();
+  for (let glyph of string) {
+    // if the current glyph exists in your component set
+    if (components[glyph]) {
+      frame.appendChild(components[glyph].createInstance());
+    } else {
+      // should error
+    }
+  }
+  frame.layoutMode = "HORIZONTAL";
+  frame.primaryAxisSizingMode = "AUTO";
+  frame.counterAxisSizingMode = "AUTO"
+  frame.horizontalPadding = 20;
+  frame.verticalPadding = 40;
+  frame.x = x;
+  frame.y = y;
+  return frame;
+}
 
 function createSpacingStrings() {
   // capitals only first
-
-  var frame = figma.createFrame();
-  frame.layoutMode = "HORIZONTAL";
-  frame.horizontalPadding = 20;
-  frame.verticalPadding = 40;
-
-
+  // Create a a spacing string for every glyph component that exists within Capitals string
+  for (const glyph of capitals) {
+    let node = components[glyph];
+    if (node) {
+      var spacingString = buildSpacingString(glyph);
+      var frame = addGlyphsToFrame(spacingString);
+      frame.name = "Spacing/"+glyph;
+      figma.currentPage.appendChild(frame);
+    }
+  }
 }
 
-function findComponents() {
-  
+function renderText(string: string) {
+  var frame = addGlyphsToFrame(string);
+  frame.name = string
+  figma.currentPage.appendChild(frame);
 }
+
+
+
+
 
 
