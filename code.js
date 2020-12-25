@@ -20,6 +20,9 @@ figma.ui.onmessage = msg => {
     else if (msg.type == 'add-text') {
         renderText(msg.data);
     }
+    else if (msg.type == 'new-typeface') {
+        createNewTypeface();
+    }
 };
 function logComponents() {
     // all components must be glyphs in the short term
@@ -94,4 +97,30 @@ function renderText(string) {
     var frame = addGlyphsToFrame(string);
     frame.name = string;
     figma.currentPage.appendChild(frame);
+}
+function createNewTypeface() {
+    // The typeface will be created on a new page
+    var page = figma.createPage();
+    page.name = "New typeface";
+    var x = 0;
+    var y = 0;
+    var w = 100;
+    var h = 100;
+    var xStart = 0;
+    for (var set of glyphSets) {
+        console.log(set);
+        for (let i = 1; i <= set.length; i++) {
+            let comp = figma.createComponent();
+            page.appendChild(comp);
+            comp.resize(w, h);
+            comp.name = set[i - 1];
+            comp.x = x;
+            comp.y = y;
+            x = ((i % 5 == 0) ? xStart : x + w + 20);
+            y = ((i % 5 == 0) ? y + h + 20 : y);
+        }
+        xStart = xStart + (w + 20) * 5 + 200;
+        x = xStart;
+        y = 0;
+    }
 }

@@ -1,3 +1,5 @@
+<button id="new-typeface">Create new typeface</button>
+
 <button id="log">Log components</button>
 
 <button id="createSpacing">Create spacing strings</button>
@@ -7,6 +9,9 @@
 
 <script>
 
+document.getElementById('new-typeface').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'new-typeface' } }, '*')
+}
 document.getElementById('createSpacing').onclick = () => {
   // const textbox = document.getElementById('count');
   // const count = parseInt(textbox.value, 10);
