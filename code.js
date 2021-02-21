@@ -26,12 +26,13 @@ figma.ui.onmessage = msg => {
 };
 function logComponents() {
     // all components must be glyphs in the short term
-    figma.root.children.map(page => {
-        page.findAll(n => n.type == 'COMPONENT').map(node => {
-            // map each node into a hash table with its name as it key for easy access
-            components[node.name] = node;
-        });
+    // figma.root.children.map(page => {
+    //page.findAll
+    figma.currentPage.findAll(n => n.type == 'COMPONENT').map(node => {
+        // map each node into a hash table with its name as it key for easy access
+        components[node.name] = node;
     });
+    // })
     // components = Object.keys(components).sort().reduce( 
     //   (obj, key) => ({ obj[key]: components[key] }), {}
     // );
