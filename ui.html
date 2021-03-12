@@ -7,6 +7,12 @@
 <input id="textbox" type="text" placeholder="Type something"></input>
 <button id="add-text">Add text</button>
 
+<h1>Current typefaces:</h1>
+
+<div id="typefaces">
+</div>
+
+
 <script>
 
 document.getElementById('new-typeface').onclick = () => {
@@ -24,12 +30,58 @@ document.getElementById('log').onclick = () => {
 
 document.getElementById('add-text').onclick = () => {
   const text = document.getElementById('textbox').value;
-  console.log(text);
   if (text != "") {
-    console.log("post");
     parent.postMessage({ pluginMessage: { type: 'add-text' , data: text} }, '*')
   }
 }
 
+createOption = (name) => {
+  var div = document.createElement("DIV");
+
+  var radio = document.createElement("INPUT");
+  radio.setAttribute("type", "radio");
+  radio.setAttribute("id", name);
+  radio.setAttribute("value", name);
+  radio.setAttribute("name", "typeface");
+
+  radio.onclick = () => {
+    parent.postMessage({ pluginMessage: { type: 'select-option' , data: name} }, '*')
+
+  }
+
+
+  var label = document.createElement("LABEL");
+  label.setAttribute("for", name);
+  label.innerHTML = name;
+
+  div.appendChild(radio);  
+  div.appendChild(label);
+
+  document.getElementById('typefaces').appendChild(div);
+}
+
+
+onmessage = (event) => {
+  console.log("got this from the plugin code", event.data.pluginMessage)
+
+  var msg = event.data.pluginMessage;
+
+  if (msg.typefaces) {
+    msg.typefaces.forEach(function (name, index) {
+      console.log(name, index);
+      createOption(name);
+    }) 
+  } else if (msg.addOption) {
+    createOption(msg.addOption);
+    document.getElementById(msg.addOption).setAttribute("checked", true);
+
+  } else if (msg.selectOption) {
+    document.getElementById(msg.selectOption).setAttribute("checked", true);
+    createOption(msg.selectOption);
+  }
+
+  
+
+}
 
 </script>
