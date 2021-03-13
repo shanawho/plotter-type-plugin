@@ -10,7 +10,6 @@ let glyphSets = [capitals, lowercase, numbers];
 var currTypeface;
 var currComponents = {};
 
-
 // {name: Typeface}
 var typefacesByName = {};
 
@@ -19,25 +18,48 @@ async function getTypefacesFromStorage() {
   // List of names of typefaces
   // All the Typeface class objects which contain component glyphs
   // Local storage of storedTypefaces is formatted as keys = pageIds and values = Typeface objects
-  var storedTypefaces = await figma.clientStorage.getAsync("typefaces");
+  figma.clientStorage.getAsync("typefaces").then(storedTypefaces => {
+    figma.showUI(__html__);
 
-  console.log("typefaces:", storedTypefaces);
+    console.log("stored typefaces", storedTypefaces);
 
-  figma.showUI(__html__);
+    postNamesToUI(storedTypefaces);
 
-  var names = [];
-  storedTypefaces.keys().forEach(function (id, index) {
-    names.push(storedTypefaces[id].name);
-  }) 
+    saveByNames(storedTypefaces);
+
+    // currTypeface = storedTypefaces[Object.keys(storedTypefaces)[0]];
+  }).catch( function() {
+    console.log("promise rejected")
+  });
 
   // default to first in list for now!
-  currTypeface = await figma.clientStorage.getAsync("currTypeface");
-  
-  figma.ui.postMessage({typefaces: names})
-  // loadUI(storedTypefaces);
+  figma.clientStorage.getAsync("currTypeface").then(currTypeface => {
+    if (currTypeface != undefined) {
+      currTypeface.setAsCurrent();
+    }
+  })
+  // currTypeface.setAsCurrent();
+
 }
 
 getTypefacesFromStorage();
+
+function saveByNames(storedTypefaces) {
+  for (const key in storedTypefaces) {
+    const tf: Typeface = storedTypefaces[key];
+    const name = tf.name;
+    typefacesByName[name] = tf;
+  }
+}
+
+function postNamesToUI(storedTypefaces) {
+  var names = [];
+  Object.keys(storedTypefaces).forEach(function (id) {
+    var n = storedTypefaces[id].name
+    names.push(n);
+  }) 
+  figma.ui.postMessage({typefaces: names})
+}
 
   
 // Calls to "parent.postMessage" from within the HTML page will trigger this
@@ -60,15 +82,15 @@ figma.ui.onmessage = msg => {
 }
 
 function selectOption(name: string) {
-  const selectedTypeface = typefacesByName[name];
-  selectedTypeface.setAsCurrent();
+  const selectedTypeface: Typeface = typefacesByName[name];
+  currTypeface = selectedTypeface
 }
 
 
 class Typeface {
   id: string;
   name: string;
-  glyphDict = {};
+  glyphDict: {string: ComponentNode} = {} as any; // this is prob bad??
 
   constructor(id: string, name: string) {
     this.id = id;
@@ -86,12 +108,16 @@ class Typeface {
   }
 
   logGlyphs() {
+    console.log("LOG GLYPHS");
     // all components must be glyphs in the short term
     // figma.root.children.map(page => {
       //page.findAll
+
+      console.log(this.glyphDict);
       figma.currentPage.findAll(n => n.type == 'COMPONENT').map(node => {
         // map each node into a hash table with its name as it key for easy access
         this.glyphDict[node.name] = <ComponentNode> node;
+        console.log(node.name, node);
       })
   }
 
@@ -103,43 +129,30 @@ class Typeface {
     // The Typeface object then contains everything we need for names and glyphsets
     figma.clientStorage.getAsync("typefaces").then(storedTypefaces => {
       
+      console.log("check what's in local storage", storedTypefaces);
       if (storedTypefaces) {
         // The dict already exists
         // This typeface may already be in the dict, or not
         // In both cases, we just need to reassign the value
         storedTypefaces[this.id] = this;
         figma.clientStorage.setAsync("typefaces", storedTypefaces);
+        console.log("update local storage", storedTypefaces);
       } else {
         // The dict not exist yet. Need to create the dictionary
         var newDict = {};
         newDict[this.id] = this;
         figma.clientStorage.setAsync("typefaces", newDict);
+        console.log("started local storage dict", newDict);
       }
     })
   }
 
-  // getGlyphsFromLocalStorage() {
-  //   return figma.clientStorage.getAsync(this.id);
-  // }
 
   setAsCurrent() {
     currTypeface = this;
-    console.log(this.name + "set as current")
-    figma.clientStorage.setAsync("currTypefaces", this);
-    
-    // figma.ui.postMessage(this.name)
-
+    // figma.clientStorage.setAsync("currTypefaces", this);
   }
 }
-
-// function loadFromLocalStorage() {
-//   var typefaces = {};
-//   figma.root.children.map(page => {
-//     var t = await figma.clientStorage.getAsync(page.id);
-//   }
-
-//   return typefaces;
-// }
 
 
 function logCurrentPage() {
@@ -147,9 +160,11 @@ function logCurrentPage() {
   var pageName = figma.currentPage.name;
   if (pageName in typefacesByName) {
     console.log("Log current page:", pageName + " is in typefacesByName")
-    const typeface = typefacesByName[pageName]
+    console.log(typefacesByName[pageName])
+    const typeface: Typeface = typefacesByName[pageName]
     typeface.logGlyphs();
   } else {
+
     typefacesByName[pageName] = new Typeface(currId, pageName);
   }
 }
@@ -181,13 +196,12 @@ function addGlyphsToFrame(string: string) {
     x = lastNode.x;
   }
   let frame = createFrame();
-  console.log("currTypeface", currTypeface.name)
   for (let glyph of string) {
     // if the current glyph exists in your component set
-    
     const components = currTypeface.glyphDict;
     if (components[glyph]) {
-      frame.appendChild(components[glyph].createInstance());
+      let component: ComponentNode = <ComponentNode> figma.getNodeById(components[glyph].id);
+      frame.appendChild(component.createInstance());
     } else {
       // should error
     }
@@ -235,7 +249,6 @@ function createNewPage() {
   var h = 100;
   var xStart = 0;
   for (var set of glyphSets) {
-    console.log(set);
     for (let i=1; i<=set.length; i++) {
       let comp = figma.createComponent();
       page.appendChild(comp);

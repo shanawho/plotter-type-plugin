@@ -7,7 +7,6 @@
 <input id="textbox" type="text" placeholder="Type something"></input>
 <button id="add-text">Add text</button>
 
-<h1>Current typefaces:</h1>
 
 <div id="typefaces">
 </div>
@@ -68,8 +67,7 @@ onmessage = (event) => {
 
   if (msg.typefaces) {
     msg.typefaces.forEach(function (name, index) {
-      console.log(name, index);
-      createOption(name);
+      createOption(name, typefaces.name);
     }) 
   } else if (msg.addOption) {
     createOption(msg.addOption);
@@ -77,7 +75,6 @@ onmessage = (event) => {
 
   } else if (msg.selectOption) {
     document.getElementById(msg.selectOption).setAttribute("checked", true);
-    createOption(msg.selectOption);
   }
 
   
